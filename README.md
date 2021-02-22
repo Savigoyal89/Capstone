@@ -13,3 +13,12 @@ For this project, we restrict set A and set B as mentioned above to be integers 
 
 ## Goal
 In this project, I plan to implement a solution based on CUDA that identifies the ideal solutions of the Prouhet-Tarry-Escott problem in CUDA and compare the performance with the baseline implementation using MPI library.
+
+## Instructions to run
+```shell
+foo@bar:~$ mkdir build
+foo@bar:~$ cd build
+foo@bar:~$ cmake ..
+foo@bar:~$ make
+foo@bar:~$ ./Capstone
+```
