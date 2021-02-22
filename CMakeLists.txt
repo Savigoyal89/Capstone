@@ -3,4 +3,4 @@ project(Capstone)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(Capstone main.cpp baseline/library.cpp baseline/library.h)
+add_executable(Capstone baseline/main.cpp baseline/library.cpp baseline/library.h)
