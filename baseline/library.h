@@ -24,7 +24,7 @@ void get_subsets(int *input_elements, int num_input_elements, int subset_size,
                  std::vector<std::vector<int>> &output);
 
 /**
- * Get the difference of two sets. In other words get the elements present in
+ * Get the difference between the two sets. In other words, get the elements present in
  * the input_elements but not in the subset.
  * @param input_elements  Input element set
  * @param subset The subset of the elements to excluded in the output.
@@ -36,7 +36,7 @@ void get_set_diff(const int *input_elements, const int *subset,
                   int num_input_elements, int subset_size, int *out);
 
 /**
- *  Check if two sets of elements are ideal PTE solution.
+ *  Check if two sets of elements are ideal PTE solutions.
  * @param set1 Input set 1
  * @param set2 Input set 2
  * @param set_size Set size

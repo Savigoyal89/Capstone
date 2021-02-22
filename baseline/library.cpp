@@ -53,7 +53,7 @@ void get_combinations(int *arr, int n, int r,
 }
 
 /**
- * Gets all the subsets of given size from an input set of elements.
+ * Gets all the subsets of a given size from an input set of elements.
  * @param input_elements Input elements
  * @param num_input_elements Number of input elements
  * @param subset_size Number of elements in a subset
@@ -70,7 +70,7 @@ void get_subsets(int *input_elements, int num_input_elements, int subset_size,
 }
 
 /**
- * Get the difference of two sets. In other words get the elements present in
+ * Get the difference between the two sets. In other words, get the elements present in
  * the input_elements but not in the subset.
  * @param input_elements  Input element set
  * @param subset The subset of the elements to excluded in the output.
@@ -103,7 +103,7 @@ double get_sum_of_power(int *set, int set_size, int power) {
 }
 
 /**
- *  Check if two sets of elements are ideal PTE solution.
+ *  Check if two sets of elements are ideal PTE solutions.
  * @param set1 Input set 1
  * @param set2 Input set 2
  * @param set_size Set size
