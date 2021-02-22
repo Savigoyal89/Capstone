@@ -1,6 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
-#include "library.h"
+#include "baseline/library.h"
 
 using namespace std;
 // Driver code
