@@ -17,7 +17,7 @@ int *create_nums_arr(int num_elements) {
     int *arr_nums = (int *) malloc(sizeof(int) * num_elements);
     assert(arr_nums != NULL);
     for (int i = 0; i < num_elements; i++) {
-        arr_nums[i] = i;
+        arr_nums[i] = i+1;
     }
     return arr_nums;
 }
@@ -78,13 +78,14 @@ void get_subsets(int *input_elements, int num_input_elements, int subset_size,
  * @param subset_size Number of elements in a subset
  * @param out Output set of elements.
  */
-void get_set_diff(const int *input_elements, const int *subset,
+void get_set_diff(const int *input_elements,  std::vector<int> subset,
                   int num_input_elements, int subset_size, int *out) {
+
     int i = 0;
     int j = 0;
     int k = 0;
     while (i < num_input_elements) {
-        if (input_elements[i] == subset[j]) {
+        if (j<subset_size && input_elements[i] == subset[j]) {
             j++;
         } else {
             out[k] = input_elements[i];
@@ -94,7 +95,7 @@ void get_set_diff(const int *input_elements, const int *subset,
     }
 }
 
-double get_sum_of_power(int *set, int set_size, int power) {
+double get_sum_of_power(std::vector<int> set, int set_size, int power) {
     double sum = 0;
     for (int i = 0; i < set_size; i++) {
         sum += pow(set[i], power);
@@ -109,7 +110,7 @@ double get_sum_of_power(int *set, int set_size, int power) {
  * @param set_size Set size
  * @return true if the sets are ideal PTE, else false.
  */
-bool is_ideal_PTE(int *set1, int *set2, int set_size) {
+bool is_ideal_PTE(std::vector<int> set1, std::vector<int> set2, int set_size) {
     for (int i = 1; i < set_size; i++) {
         if (get_sum_of_power(set1, set_size, i) !=
             get_sum_of_power(set2, set_size, i)) {

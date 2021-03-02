@@ -31,8 +31,10 @@ void get_subsets(int *input_elements, int num_input_elements, int subset_size,
  * @param num_input_elements Number of input elements
  * @param subset_size Number of elements in a subset
  * @param out Output set of elements.
+ *
+ *
  */
-void get_set_diff(const int *input_elements, const int *subset,
+void get_set_diff(const int *input_elements,  std::vector<int> subset,
                   int num_input_elements, int subset_size, int *out);
 
 /**
@@ -42,6 +44,6 @@ void get_set_diff(const int *input_elements, const int *subset,
  * @param set_size Set size
  * @return true if the sets are ideal PTE, else false.
  */
-bool is_ideal_PTE(int *set1, int *set2, int set_size);
+bool is_ideal_PTE(std::vector<int> set1, std::vector<int> set2, int set_size);
 
 #endif //CAPSTONE_LIBRARY_H
