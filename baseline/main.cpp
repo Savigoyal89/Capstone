@@ -6,7 +6,7 @@
 
 using namespace std;
 // Driver code
-#define NUM_THREADS 495
+
 
 struct arg_struct {
     int thread_id;
@@ -92,10 +92,8 @@ void *get_set_diff_helper(void *arguments){
 
 int main() {
     int *nums_arr = NULL;
-    int num_elements = 12;
+    int num_elements = 25;
 
-    pthread_t threads[NUM_THREADS];
-    pthread_attr_t attr;
 
     nums_arr = create_nums_arr(num_elements);
     cout <<"Print elements in the main thread.\n";
@@ -108,10 +106,13 @@ int main() {
 
     //create all subsets max size 12 one one side
     std::vector<std::vector<int>> primarySubsets;
-    for (int i = 4; i <5; i++) {
+    for (int i = 2; i <= num_elements/2; i++) {
 
         get_subsets(nums_arr, num_elements, i,primarySubsets);
     }
+    int NUM_THREADS = primarySubsets.size();
+
+    pthread_t threads[NUM_THREADS];
     struct arg_struct args[NUM_THREADS];
     for (int i = 0; i < NUM_THREADS; i++) {
         args[i].thread_id = i;
@@ -148,7 +149,8 @@ int main() {
         printf("\n");
 
     }
-    cout << "No Of Solution found" <<k;
+    cout << "Number Of solutions found " << k;
     cout << endl;
     pthread_exit(NULL);
 }
+
