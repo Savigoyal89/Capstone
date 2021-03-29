@@ -1,7 +1,7 @@
 //
 // Created by Savi Goyal on 2/17/21.
 //
-
+#include <vector>
 #ifndef CAPSTONE_LIBRARY_H
 #define CAPSTONE_LIBRARY_H
 
@@ -23,19 +23,19 @@ int *create_nums_arr(int num_elements);
 void get_subsets(int *input_elements, int num_input_elements, int subset_size,
                  std::vector<std::vector<int>> &output);
 
-/**
- * Get the difference between the two sets. In other words, get the elements present in
- * the input_elements but not in the subset.
- * @param input_elements  Input element set
- * @param subset The subset of the elements to excluded in the output.
- * @param num_input_elements Number of input elements
- * @param subset_size Number of elements in a subset
- * @param out Output set of elements.
- *
- *
- */
-void get_set_diff(const int *input_elements,  std::vector<int> subset,
-                  int num_input_elements, int subset_size, int *out);
+///**
+// * Get the difference between the two sets. In other words, get the elements present in
+// * the input_elements but not in the subset.
+// * @param input_elements  Input element set
+// * @param subset The subset of the elements to excluded in the output.
+// * @param num_input_elements Number of input elements
+// * @param subset_size Number of elements in a subset
+// * @param out Output set of elements.
+// *
+// *
+// */
+//void get_set_diff(const int *input_elements,  std::vector<int> subset,
+//                  int num_input_elements, int subset_size, int *out);
 
 /**
  *  Check if two sets of elements are ideal PTE solutions.

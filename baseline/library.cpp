@@ -78,22 +78,22 @@ void get_subsets(int *input_elements, int num_input_elements, int subset_size,
  * @param subset_size Number of elements in a subset
  * @param out Output set of elements.
  */
-void get_set_diff(const int *input_elements,  std::vector<int> subset,
-                  int num_input_elements, int subset_size, int *out) {
-
-    int i = 0;
-    int j = 0;
-    int k = 0;
-    while (i < num_input_elements) {
-        if (j<subset_size && input_elements[i] == subset[j]) {
-            j++;
-        } else {
-            out[k] = input_elements[i];
-            k++;
-        }
-        i++;
-    }
-}
+//void get_set_diff(const int *input_elements,  std::vector<int> subset,
+//                  int num_input_elements, int subset_size, int *out) {
+//
+//    int i = 0;
+//    int j = 0;
+//    int k = 0;
+//    while (i < num_input_elements) {
+//        if (j<subset_size && input_elements[i] == subset[j]) {
+//            j++;
+//        } else {
+//            out[k] = input_elements[i];
+//            k++;
+//        }
+//        i++;
+//    }
+//}
 
 double get_sum_of_power(std::vector<int> set, int set_size, int power) {
     double sum = 0;

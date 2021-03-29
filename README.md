@@ -22,3 +22,4 @@ foo@bar:~$ cmake ..
 foo@bar:~$ make
 foo@bar:~$ ./Capstone
 ```
+
