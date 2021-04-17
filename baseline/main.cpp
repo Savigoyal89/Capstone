@@ -68,10 +68,12 @@ void get_combinations(int *arr, int n, int r,
 void get_subsets(int *input_elements, int num_input_elements, int subset_size,
                  std::vector<std::vector<int>> &output) {
     // A temporary vector to store
-    // all combination one by one
-    std::vector<int> current;
-    get_combinations(input_elements, num_input_elements, subset_size, current,
-                     0, output);
+    // all combination one by onesubset_size
+    if(num_input_elements >= subset_size){
+                std::vector<int> current;
+                get_combinations(input_elements, num_input_elements, subset_size, current,
+                0, output);
+        }
     return;
 }
 
@@ -140,11 +142,6 @@ int* twoDVecToArr(std::vector<std::vector<int>> vec, int total_size) {
 }
 
 
-int log_a_to_base_b(int a, int b)
-{
-    return log(a) / log(b);
-}
-
 std::vector<int> conversionNumberToCombination(int num, int count_of_digits){
 
     int base =26;
@@ -178,18 +175,13 @@ int *create_nums_arr(int num_elements) {
 }
 
 
-
 void get_set_diff(int *input_elements,  std::vector<int> subset,
-                  int num_input_elements, int subset_size, int *out, int world_rank) {
-
-
+                  int num_input_elements, int subset_size, int *out) {
     int i = 0;
     int j = 0;
     int k = 0;
 
     while (i < num_input_elements) {
-
-
 
         if (j<subset_size && (input_elements[i] == subset[j])) {
             j++;
@@ -203,8 +195,6 @@ void get_set_diff(int *input_elements,  std::vector<int> subset,
         }
         i++;
     }
-
-
 
 }
 
@@ -365,7 +355,7 @@ int main(int argc, char *argv[]) {
 
 
         int *temp_array = new int[temp_size];
-        get_set_diff(nums_arr, subset_comb, num_elements, subset_size,temp_array,world_rank);
+        get_set_diff(nums_arr, subset_comb, num_elements, subset_size,temp_array);
         std::vector<std::vector<int>> partner_comb;
         get_subsets(temp_array, temp_size, subset_size, partner_comb);
 
