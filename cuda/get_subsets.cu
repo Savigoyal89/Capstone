@@ -1,7 +1,8 @@
 #include <iostream>
 using namespace std;
-#define THREADS_PER_BLOCK 16
+#define THREADS_PER_BLOCK 1024
 #define MAX_ELEMENT 26
+#define NUM_ELEMENTS 7
 
 #define cudaCheckErrors(msg) \
     do { \
@@ -15,7 +16,7 @@ using namespace std;
         } \
     } while (0)
 
-
+__constant__ __device__ int elements[NUM_ELEMENTS] = {0,1,2,3,4,5,6};
 
 __host__ __device__ int get_r_steps_product(int n, int steps) {
   int out = 1;
@@ -35,7 +36,7 @@ __host__ __device__ int nCr(int n, int r) {
   }
 }
 
-__host__ int convert_subset_to_number(int *subset, int subset_size) {
+__host__ __device__ int convert_subset_to_number(int *subset, int subset_size) {
   int sum = 0;
   for (int i = subset_size - 1; i >= 0; i--) {
     sum = sum * MAX_ELEMENT + subset[i];
@@ -43,7 +44,7 @@ __host__ int convert_subset_to_number(int *subset, int subset_size) {
   return sum;
 }
 
-__host__ void convert_number_to_subset(int number, int *subset) {
+__host__ __device__ void convert_number_to_subset(int number, int *subset) {
   int index = 0;
   while (number > 0) {
     subset[index] = number % MAX_ELEMENT;
@@ -52,7 +53,7 @@ __host__ void convert_number_to_subset(int number, int *subset) {
   }
 }
 
-__host__ void get_combinations(int *arr, int arr_index, int *current, int current_index,
+__host__ __device__ void get_combinations(int *arr, int arr_index, int *current, int current_index,
                       int elements_size, int subset_size, int *output,
                       int &output_index) {
   // Current combination is ready, print it
@@ -75,27 +76,64 @@ __host__ void get_combinations(int *arr, int arr_index, int *current, int curren
 }
 
 
-int main(int argc, char *argv[]) {
-  // Declare host copies
-  int arr[] = {0,1, 2, 3, 4, 5, 6};
-  int array_size = 7;
-  int subset_size = 4;
+__global__ void get_ideal_pte_combinations(int* input, int* output){
+  int index = threadIdx.x ;
+  int input_subset_number = input[index];
+  output[index]  = input_subset_number;
+}
+
+__host__ void print_subsets(int* subsets, int num_subsets, int subset_size ){
   int subset[subset_size] = {0};
-  // Calculate the output size
-  int output_size = nCr(array_size, subset_size);
-  int output[output_size+1] = {0};
-  output[0]= subset_size;
-  int output_index = 1;
-  get_combinations(arr, 0, subset, 0, array_size, subset_size, output,
-                   output_index);
-  printf("Output Index: %d \n",output_index);
-  printf("First index of output : %d\n",output[0]);
-  for (int i = 1; i < output_index; i++) {
-    convert_number_to_subset(output[i],subset);
+  for (int i = 0; i < num_subsets; i++) {
+    convert_number_to_subset(subsets[i], subset);
     for (int j = 0; j < subset_size; j++) {
       printf("%d ", subset[j]);
     }
     printf("\n");
   }
+}
+
+__host__ void get_input_subsets(int subset_size, int* subsets){
+  int subset[subset_size] = {0};
+  // Calculate the output size
+  int output_index = 0;
+  int arr[NUM_ELEMENTS] = {0,1,2,3,4,5,6};
+  get_combinations(arr, 0, subset, 0, NUM_ELEMENTS, subset_size, subsets,
+                   output_index);
+}
+
+int main(int argc, char *argv[]) {
+  // Declare host copies
+  int subset_size = 4;
+  int num_subsets = nCr(NUM_ELEMENTS, subset_size);
+  int h_subsets[num_subsets] = {0};
+  get_input_subsets(subset_size, h_subsets);
+  printf("Printing output from CPU with size: %d\n", num_subsets);
+  print_subsets(h_subsets,num_subsets,subset_size);
+  // Initiate device copies
+  int *d_subsets, *d_output;  // device copies
+  int size = num_subsets * sizeof(int);
+
+  // Allocate space for device copies
+  cudaMalloc((void**) &d_subsets, size);
+  cudaMalloc((void**) &d_output, size);
+
+  // Copy from host to device
+  cudaMemcpy(d_subsets, h_subsets,size, cudaMemcpyHostToDevice);
+
+  // Run the functions on device
+  get_ideal_pte_combinations<<<1,num_subsets>>>(d_subsets,d_output);
+
+  // Copy from device to host
+  h_subsets[num_subsets] = {0};
+  cudaMemcpy(h_subsets, d_output, size, cudaMemcpyDeviceToHost);
+  printf("Printing output from GPU with size: %d\n",num_subsets);
+  print_subsets(h_subsets, num_subsets,subset_size);
+
+  // Clean up
+  cudaFree(d_subsets);
+  cudaFree(d_output);
+  return 0;
+
 }
 
