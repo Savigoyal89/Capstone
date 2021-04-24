@@ -1,8 +1,8 @@
 #include <iostream>
 using namespace std;
 #define THREADS_PER_BLOCK 1024
-#define MAX_ELEMENT 26
-#define NUM_ELEMENTS 7
+#define MAX_ELEMENT 7
+#define NUM_ELEMENTS_SUBSET 3
 
 #define cudaCheckErrors(msg) \
     do { \
@@ -16,7 +16,12 @@ using namespace std;
         } \
     } while (0)
 
-__constant__ __device__ int elements[NUM_ELEMENTS] = {0,1,2,3,4,5,6};
+
+__host__ __device__ void get_nums_array(int* arr){
+    for (int i =0; i < MAX_ELEMENT;i++){
+      arr[i]=i;
+    }
+}
 
 __host__ __device__ int get_r_steps_product(int n, int steps) {
   int out = 1;
@@ -97,19 +102,19 @@ __host__ void get_input_subsets(int subset_size, int* subsets){
   int subset[subset_size] = {0};
   // Calculate the output size
   int output_index = 0;
-  int arr[NUM_ELEMENTS] = {0,1,2,3,4,5,6};
-  get_combinations(arr, 0, subset, 0, NUM_ELEMENTS, subset_size, subsets,
-                   output_index);
+  int arr[MAX_ELEMENT] = {0};
+  get_nums_array(arr);
+  printf("Subset size: %d\n", subset_size);
+  get_combinations(arr, 0, subset, 0, MAX_ELEMENT, subset_size, subsets,output_index);
 }
 
 int main(int argc, char *argv[]) {
   // Declare host copies
-  int subset_size = 4;
-  int num_subsets = nCr(NUM_ELEMENTS, subset_size);
+  int num_subsets = nCr(MAX_ELEMENT, NUM_ELEMENTS_SUBSET);
   int h_subsets[num_subsets] = {0};
-  get_input_subsets(subset_size, h_subsets);
+  get_input_subsets(NUM_ELEMENTS_SUBSET, h_subsets);
   printf("Printing output from CPU with size: %d\n", num_subsets);
-  print_subsets(h_subsets,num_subsets,subset_size);
+  print_subsets(h_subsets,num_subsets,NUM_ELEMENTS_SUBSET);
   // Initiate device copies
   int *d_subsets, *d_output;  // device copies
   int size = num_subsets * sizeof(int);
@@ -128,7 +133,7 @@ int main(int argc, char *argv[]) {
   h_subsets[num_subsets] = {0};
   cudaMemcpy(h_subsets, d_output, size, cudaMemcpyDeviceToHost);
   printf("Printing output from GPU with size: %d\n",num_subsets);
-  print_subsets(h_subsets, num_subsets,subset_size);
+  print_subsets(h_subsets, num_subsets,NUM_ELEMENTS_SUBSET);
 
   // Clean up
   cudaFree(d_subsets);
