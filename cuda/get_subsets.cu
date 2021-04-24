@@ -80,10 +80,34 @@ __host__ __device__ void get_combinations(int *arr, int arr_index, int *current,
                    elements_size, subset_size, output, output_index);
 }
 
+__device__ int get_set_diff(int *input_elements, int* subset,int *out) {
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    while (i < MAX_ELEMENT) {
+        if (j<NUM_ELEMENTS_SUBSET && (input_elements[i] == subset[j])) {
+            j++;
+        }
+        else {
+            if (input_elements[i]>subset[0]) {
+                out[k] = input_elements[i];
+                k++;
+            }
+        }
+        i++;
+    }
+  return k;
+}
 
 __global__ void get_ideal_pte_combinations(int* input, int* output){
   int index = threadIdx.x ;
   int input_subset_number = input[index];
+  int subset[NUM_ELEMENTS_SUBSET]= {0};
+  convert_number_to_subset(input_subset_number, subset);
+  int set_diff[MAX_ELEMENT -  NUM_ELEMENTS_SUBSET] = {0};
+  int arr[MAX_ELEMENT] = {0};
+  get_nums_array(arr);
+  int set_diff_size = get_set_diff(arr,subset,set_diff);
   output[index]  = input_subset_number;
 }
 
