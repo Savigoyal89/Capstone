@@ -1,8 +1,11 @@
 #include <iostream>
+#include <cmath>
 using namespace std;
 #define THREADS_PER_BLOCK 1024
 #define MAX_ELEMENT 7
 #define NUM_ELEMENTS_SUBSET 3
+#define NUM_ELEMENTS_PARTNER 10
+#define OFFSET 2
 
 #define cudaCheckErrors(msg) \
     do { \
@@ -99,16 +102,56 @@ __device__ int get_set_diff(int *input_elements, int* subset,int *out) {
   return k;
 }
 
+__device__ double get_sum_of_power(int* set, int set_size, int power) {
+    double sum = 0;
+    for (int i = 0; i < set_size; i++) {
+        sum += pow(set[i], power);
+    }
+    return sum;
+}
+
+__device__ bool is_ideal_PTE(int setNum1, int setNum2) {
+    if (setNum1 ==0 || setNum2 ==0){
+       return false;
+    }
+    int set1[NUM_ELEMENTS_SUBSET] = {0};
+    int set2[NUM_ELEMENTS_SUBSET] = {0};
+    convert_number_to_subset(setNum1,set1);
+    convert_number_to_subset(setNum2,set2);
+    for (int i = 1; i < NUM_ELEMENTS_SUBSET; i++) {
+        if (get_sum_of_power(set1, NUM_ELEMENTS_SUBSET, i) !=
+            get_sum_of_power(set2, NUM_ELEMENTS_SUBSET, i)) {
+            return false;
+        }
+    }
+    return true;
+}
 __global__ void get_ideal_pte_combinations(int* input, int* output){
   int index = threadIdx.x ;
   int input_subset_number = input[index];
-  int subset[NUM_ELEMENTS_SUBSET]= {0};
+  int subset[NUM_ELEMENTS_SUBSET] = {0};
   convert_number_to_subset(input_subset_number, subset);
   int set_diff[MAX_ELEMENT -  NUM_ELEMENTS_SUBSET] = {0};
   int arr[MAX_ELEMENT] = {0};
   get_nums_array(arr);
   int set_diff_size = get_set_diff(arr,subset,set_diff);
-  output[index]  = input_subset_number;
+  int partner_subsets[NUM_ELEMENTS_PARTNER] = {0};
+  int partner_subset_index = 0;
+  int current[NUM_ELEMENTS_SUBSET] = {0};
+  int offset = 0;
+  get_combinations(set_diff, 0, current, 0, set_diff_size, NUM_ELEMENTS_SUBSET, partner_subsets,partner_subset_index);
+  for (int i=0; i < partner_subset_index;i++){
+    if (is_ideal_PTE(input_subset_number, partner_subsets[i])){
+        output[index + offset] = input_subset_number;
+        output[index + offset + 1] = partner_subsets[i];
+	offset +=2;
+    }
+  }
+  delete[] partner_subsets;
+  /*for (int i =0; i < OFFSET;i=i+2){
+     output[index*OFFSET + i] = input_subset_number;
+     output[index*OFFSET + i+1] = input_subset_number;
+  }*/
 }
 
 __host__ void print_subsets(int* subsets, int num_subsets, int subset_size ){
@@ -122,13 +165,31 @@ __host__ void print_subsets(int* subsets, int num_subsets, int subset_size ){
   }
 }
 
+__host__ void print_output(int* subsets, int num_subsets ){
+  int subset[NUM_ELEMENTS_SUBSET] = {0};
+  for (int i = 0; i < num_subsets-1; i=i+2) {
+    if (subsets[i]==0 || subsets[i+1]==0){
+    	continue;
+    }	    
+    convert_number_to_subset(subsets[i], subset);
+    for (int j = 0; j < NUM_ELEMENTS_SUBSET; j++) {
+      printf("%d ", subset[j]);
+    }
+    printf(" -- ");
+    convert_number_to_subset(subsets[i+1], subset);
+    for (int j = 0; j < NUM_ELEMENTS_SUBSET; j++) {
+      printf("%d ", subset[j]);
+    }
+    printf("\n");
+  }
+}
+
 __host__ void get_input_subsets(int subset_size, int* subsets){
   int subset[subset_size] = {0};
   // Calculate the output size
   int output_index = 0;
   int arr[MAX_ELEMENT] = {0};
   get_nums_array(arr);
-  printf("Subset size: %d\n", subset_size);
   get_combinations(arr, 0, subset, 0, MAX_ELEMENT, subset_size, subsets,output_index);
 }
 
@@ -139,13 +200,14 @@ int main(int argc, char *argv[]) {
   get_input_subsets(NUM_ELEMENTS_SUBSET, h_subsets);
   printf("Printing output from CPU with size: %d\n", num_subsets);
   print_subsets(h_subsets,num_subsets,NUM_ELEMENTS_SUBSET);
+  
   // Initiate device copies
   int *d_subsets, *d_output;  // device copies
   int size = num_subsets * sizeof(int);
 
   // Allocate space for device copies
   cudaMalloc((void**) &d_subsets, size);
-  cudaMalloc((void**) &d_output, size);
+  cudaMalloc((void**) &d_output, size*OFFSET);
 
   // Copy from host to device
   cudaMemcpy(d_subsets, h_subsets,size, cudaMemcpyHostToDevice);
@@ -154,10 +216,10 @@ int main(int argc, char *argv[]) {
   get_ideal_pte_combinations<<<1,num_subsets>>>(d_subsets,d_output);
 
   // Copy from device to host
-  h_subsets[num_subsets] = {0};
-  cudaMemcpy(h_subsets, d_output, size, cudaMemcpyDeviceToHost);
-  printf("Printing output from GPU with size: %d\n",num_subsets);
-  print_subsets(h_subsets, num_subsets,NUM_ELEMENTS_SUBSET);
+  int h_output[num_subsets*OFFSET] = {0};
+  cudaMemcpy(h_output, d_output, size*OFFSET, cudaMemcpyDeviceToHost);
+  printf("Printing ideal PTE output for %d element subset \n", NUM_ELEMENTS_SUBSET);
+  print_output(h_output,num_subsets*OFFSET);
 
   // Clean up
   cudaFree(d_subsets);
