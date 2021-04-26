@@ -2,10 +2,9 @@
 #include <cmath>
 using namespace std;
 #define THREADS_PER_BLOCK 512
-#define MAX_ELEMENT 11
+#define MAX_ELEMENT 16
 #define NUM_ELEMENTS_SUBSET 4
-#define NUM_ELEMENTS_PARTNER 7315
-#define OFFSET 1000
+#define OFFSET 100
 
 #define cudaCheckErrors(msg) \
     do { \
@@ -83,82 +82,68 @@ __host__ __device__ int get_combinations(int *arr, int arr_index, int *current, 
   return output_index;
 }
 
-__device__ int get_set_diff(int *input_elements, int* subset,int *out) {
-    int i = 0;
-    int j = 0;
-    int k = 0;
-    while (i < MAX_ELEMENT) {
-        if (j<NUM_ELEMENTS_SUBSET && (input_elements[i] == subset[j])) {
-            j++;
-        }
-        else {
-            if (input_elements[i]>subset[0]) {
-                out[k] = input_elements[i];
-                k++;
-            }
-        }
-        i++;
-    }
-  return k;
-}
 
-__device__ double get_sum_of_power(int* set, int set_size, int power) {
-    double sum = 0;
+__forceinline__ __device__ int get_sum_of_power(int* set, int set_size, int power, int setNum) {
+   int sum = 0;
     for (int i = 0; i < set_size; i++) {
-        sum += pow(set[i], power);
+        sum = sum + pow(set[i],power);
+	if (setNum==60465){
+	    printf("SetNum: %d , Sum of power for element: %d = %d\n",setNum,set[i],sum);
+	}
     }
     return sum;
 }
 
-__device__ bool is_ideal_PTE(int setNum1, int setNum2) {
+__forceinline__ __device__ bool is_ideal_PTE(int setNum1, int setNum2) {
     if (setNum1 <0 || setNum2 <0){
        return false;
     }
-    if (setNum1 ==0 && setNum2 ==0){
+   /* if (setNum1 ==0 && setNum2 ==0){
     	return false;
+    }*/
+    bool print_results= false;
+    if((setNum1 == 64080 && setNum2 == 60465) || (setNum2 == 64080 && setNum1 == 60465)){
+    	print_results = true;
     }
     int set1[NUM_ELEMENTS_SUBSET] = {0};
     int set2[NUM_ELEMENTS_SUBSET] = {0};
     convert_number_to_subset(setNum1,set1);
     convert_number_to_subset(setNum2,set2);
+   if (print_results){
+       printf("IS ideal PTE called for %d and %d\n",setNum1,setNum2);
+   }
     for (int i = 1; i < NUM_ELEMENTS_SUBSET; i++) {
-        if (get_sum_of_power(set1, NUM_ELEMENTS_SUBSET, i) !=
-            get_sum_of_power(set2, NUM_ELEMENTS_SUBSET, i)) {
+	int sumPowerSet1 = get_sum_of_power(set1, NUM_ELEMENTS_SUBSET, i,setNum1);   
+	int sumPowerSet2 = get_sum_of_power(set2, NUM_ELEMENTS_SUBSET, i,setNum2);   
+        if (sumPowerSet1 != sumPowerSet2){
+	    if (print_results){
+	    	printf("Result returned false for power %d with sum1= %d and sum2 = %d\n",i,sumPowerSet1, sumPowerSet2);
+	    }	    
             return false;
         }
     }
+	    if (print_results){
+	    	printf("Result returned true\n");
+	    }	    
     return true;
 }
 __global__ void get_ideal_pte_combinations(int* input, int* output,int* max_index){
   int index = threadIdx.x + blockIdx.x * blockDim.x;
+  printf("Get idea PTE solution for thread id:%d having max_index:%d\n",index,*max_index);
   if (index >= *max_index){
   	return;
   }
   int input_subset_number = input[index];
-  int subset[NUM_ELEMENTS_SUBSET] = {0};
-  convert_number_to_subset(input_subset_number, subset);
-  int set_diff[MAX_ELEMENT -  NUM_ELEMENTS_SUBSET] = {0};
-  int arr[MAX_ELEMENT] = {0};
-  get_nums_array(arr);
-  int set_diff_size = get_set_diff(arr,subset,set_diff);
-  int partner_subsets[NUM_ELEMENTS_PARTNER] = {0};
-  int partner_subset_index = 0;
-  int current[NUM_ELEMENTS_SUBSET] = {0};
-  int offset = 0;
-  //printf("Partner set diff size %d for subset number %d\n",set_diff_size,input_subset_number);
-  /*for (int i = 0; i < (MAX_ELEMENT -  NUM_ELEMENTS_SUBSET); i++){
-    printf("Diff element for subset number %d = %d\n",input_subset_number,set_diff[i]);
-  }*/
-  partner_subset_index = get_combinations(set_diff, 0, current, 0, set_diff_size, NUM_ELEMENTS_SUBSET, partner_subsets,partner_subset_index);
-  printf("Number of partner subsets for input subset number %d is = %d\n", input_subset_number,partner_subset_index);
-  for (int i=0; i < partner_subset_index;i++){
-    if (is_ideal_PTE(input_subset_number, partner_subsets[i])){
-	printf("Found ideal PTE match: %d -- %d which will be updated for output index:%d and %d\n",input_subset_number,partner_subsets[i],index*OFFSET + offset,index*OFFSET + offset+1);
+  int offset=0;
+  for (int i=index+1; i < *max_index;i++){
+    if (is_ideal_PTE(input_subset_number, input[i])){
+	printf("Found ideal PTE match: %d -- %d which will be updated for output index:%d and %d\n",input_subset_number,input[i],index*OFFSET + offset,index*OFFSET + offset+1);
         output[index*OFFSET + offset] = input_subset_number;
-        output[index*OFFSET + offset + 1] = partner_subsets[i];
+        output[index*OFFSET + offset + 1] = input[i];
 	offset +=2;
     }
   }
+  printf("Check completed for subset number %d\n",input_subset_number);
   //delete[] partner_subsets;
 }
 
@@ -209,13 +194,11 @@ int main(int argc, char *argv[]) {
   int h_subsets[num_subsets] = {0};
   get_input_subsets(NUM_ELEMENTS_SUBSET, h_subsets);
   printf("Printing output from CPU with size: %d\n", num_subsets);
-  //print_subsets(h_subsets,num_subsets,NUM_ELEMENTS_SUBSET);
+  print_subsets(h_subsets,num_subsets,NUM_ELEMENTS_SUBSET);
   
   // Initiate device copies
-  size_t limit =2568;
-  cudaDeviceSetLimit(cudaLimitStackSize, limit);
-  limit =12;
-  cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, limit);
+  size_t limit = 256;
+
   cudaDeviceGetLimit(&limit, cudaLimitStackSize);
   printf("cudaLimitStackSize: %u\n", (unsigned)limit);
   cudaDeviceGetLimit(&limit,cudaLimitPrintfFifoSize);
@@ -232,8 +215,6 @@ int main(int argc, char *argv[]) {
   cudaMalloc((void**) &d_subsets, size);
   cudaMalloc((void**) &d_max_index, sizeof(int));
   cudaMalloc((void**) &d_output, size*OFFSET);
-
-  // Copy from host to device
   cudaMemcpy(d_subsets, h_subsets,size, cudaMemcpyHostToDevice);
   cudaMemcpy(d_max_index, &num_subsets,sizeof(int), cudaMemcpyHostToDevice);
 
@@ -242,8 +223,9 @@ int main(int argc, char *argv[]) {
   printf("Number of blocks =%d with threads per block=%d for total number of subsets=%d\n", num_blocks,THREADS_PER_BLOCK,num_subsets);
   get_ideal_pte_combinations<<<num_blocks,THREADS_PER_BLOCK>>>(d_subsets,d_output,d_max_index);
   cudaDeviceSynchronize();
+  
   // Copy from device to host
-  int h_output[num_subsets*OFFSET] = {-1};
+  int h_output[num_subsets*OFFSET] = {0};
   cudaMemcpy(h_output, d_output, size*OFFSET, cudaMemcpyDeviceToHost);
   printf("Printing ideal PTE output for %d element subset \n", NUM_ELEMENTS_SUBSET);
   print_output(h_output,num_subsets*OFFSET);
