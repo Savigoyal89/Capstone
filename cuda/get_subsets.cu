@@ -1,10 +1,10 @@
 #include <iostream>
 #include <cmath>
 using namespace std;
-#define THREADS_PER_BLOCK 1024
-#define MAX_ELEMENT 8
-#define NUM_ELEMENTS_SUBSET 2
-#define NUM_ELEMENTS_PARTNER 100
+#define THREADS_PER_BLOCK 512
+#define MAX_ELEMENT 11
+#define NUM_ELEMENTS_SUBSET 4
+#define NUM_ELEMENTS_PARTNER 7315
 #define OFFSET 1000
 
 #define cudaCheckErrors(msg) \
@@ -145,7 +145,7 @@ __global__ void get_ideal_pte_combinations(int* input, int* output,int* max_inde
   int partner_subset_index = 0;
   int current[NUM_ELEMENTS_SUBSET] = {0};
   int offset = 0;
-  printf("Partner set diff size %d for subset number %d\n",set_diff_size,input_subset_number);
+  //printf("Partner set diff size %d for subset number %d\n",set_diff_size,input_subset_number);
   /*for (int i = 0; i < (MAX_ELEMENT -  NUM_ELEMENTS_SUBSET); i++){
     printf("Diff element for subset number %d = %d\n",input_subset_number,set_diff[i]);
   }*/
@@ -209,9 +209,22 @@ int main(int argc, char *argv[]) {
   int h_subsets[num_subsets] = {0};
   get_input_subsets(NUM_ELEMENTS_SUBSET, h_subsets);
   printf("Printing output from CPU with size: %d\n", num_subsets);
-  print_subsets(h_subsets,num_subsets,NUM_ELEMENTS_SUBSET);
+  //print_subsets(h_subsets,num_subsets,NUM_ELEMENTS_SUBSET);
   
   // Initiate device copies
+  size_t limit =2568;
+  cudaDeviceSetLimit(cudaLimitStackSize, limit);
+  limit =12;
+  cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, limit);
+  cudaDeviceGetLimit(&limit, cudaLimitStackSize);
+  printf("cudaLimitStackSize: %u\n", (unsigned)limit);
+  cudaDeviceGetLimit(&limit,cudaLimitPrintfFifoSize);
+  printf("cudalimitprintffifosize: %u\n", (unsigned)limit);
+  cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize);
+  printf("cudaLimitMallocHeapSize: %u\n", (unsigned)limit);
+  cudaDeviceGetLimit(&limit, cudaLimitDevRuntimeSyncDepth);
+  printf("cudaLimitDevRuntimeSyncDepth: %u\n", (unsigned)limit);
+
   int *d_subsets, *d_output, *d_max_index;  // device copies
   int size = num_subsets * sizeof(int);
   
