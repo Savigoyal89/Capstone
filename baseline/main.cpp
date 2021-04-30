@@ -321,7 +321,6 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-//        printf("An ideal solution for n = 6 are \n");
         outdata << "Ideal PTE solutions for n = 6 are: ";
 
         for (int is = 0; is < all_data_size; is++) {
@@ -352,10 +351,6 @@ int main(int argc, char *argv[]) {
     free(alldata);
     free(buffer_recv);
     MPI_Barrier(MPI_COMM_WORLD);
-
-//    if(world_rank ==0) {
-//        printf("Total time taken by root process %f\n", mpiWtime);
-//    }
 
     MPI_Finalize();
     return EXIT_SUCCESS;
