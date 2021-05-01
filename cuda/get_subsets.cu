@@ -2,9 +2,9 @@
 #include <cmath>
 using namespace std;
 #define THREADS_PER_BLOCK 512
-#define MAX_ELEMENT 16
-#define NUM_ELEMENTS_SUBSET 4
-#define OFFSET 100
+#define MAX_ELEMENT 26
+#define NUM_ELEMENTS_SUBSET 6
+#define OFFSET 6
 
 #define cudaCheckErrors(msg) \
     do { \
