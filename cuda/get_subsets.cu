@@ -83,24 +83,28 @@ __host__ __device__ int get_combinations(int *arr, int arr_index, int *current, 
 }
 
 
-__forceinline__ __device__ int get_sum_of_power(int* set, int set_size, int power, int setNum) {
-   int sum = 0;
+
+__device__ int get_sum_of_power(int* set, int set_size, int power, int setNum, int* sum_of_square) {
+  int index = threadIdx.x + blockIdx.x * blockDim.x;
+  sum_of_square[index]=0;
     for (int i = 0; i < set_size; i++) {
-        sum = sum + pow(set[i],power);
-	if (setNum==60465){
-	    printf("SetNum: %d , Sum of power for element: %d = %d\n",setNum,set[i],sum);
-	}
+	    int power_val = 1;
+            for (int j =0; j < power; j++){
+	       power_val = power_val*set[i];
+	    }
+	    int new_sum = sum_of_square[index] + power_val;
+	      if (setNum==60465){
+	        printf("SetNum: %d , Set number: %d , %d + %d = %d\n",setNum,set[i],sum_of_square[index],power_val,new_sum);
+	    }
+	   sum_of_square[index] = new_sum;   
     }
-    return sum;
+    return sum_of_square[index];
 }
 
-__forceinline__ __device__ bool is_ideal_PTE(int setNum1, int setNum2) {
+__device__ bool is_ideal_PTE(int setNum1, int setNum2,int* sum_of_square) {
     if (setNum1 <0 || setNum2 <0){
        return false;
     }
-   /* if (setNum1 ==0 && setNum2 ==0){
-    	return false;
-    }*/
     bool print_results= false;
     if((setNum1 == 64080 && setNum2 == 60465) || (setNum2 == 64080 && setNum1 == 60465)){
     	print_results = true;
@@ -113,21 +117,22 @@ __forceinline__ __device__ bool is_ideal_PTE(int setNum1, int setNum2) {
        printf("IS ideal PTE called for %d and %d\n",setNum1,setNum2);
    }
     for (int i = 1; i < NUM_ELEMENTS_SUBSET; i++) {
-	int sumPowerSet1 = get_sum_of_power(set1, NUM_ELEMENTS_SUBSET, i,setNum1);   
-	int sumPowerSet2 = get_sum_of_power(set2, NUM_ELEMENTS_SUBSET, i,setNum2);   
+	      int sumPowerSet1 = get_sum_of_power(set1, NUM_ELEMENTS_SUBSET, i,setNum1, sum_of_square);
+	      int sumPowerSet2 = get_sum_of_power(set2, NUM_ELEMENTS_SUBSET, i,setNum2, sum_of_square);
         if (sumPowerSet1 != sumPowerSet2){
 	    if (print_results){
 	    	printf("Result returned false for power %d with sum1= %d and sum2 = %d\n",i,sumPowerSet1, sumPowerSet2);
-	    }	    
-            return false;
-        }
+	     }
+      return false;
+       }
     }
-	    if (print_results){
-	    	printf("Result returned true\n");
-	    }	    
+    if (print_results){
+      printf("Result returned true\n");
+    }
     return true;
 }
-__global__ void get_ideal_pte_combinations(int* input, int* output,int* max_index){
+
+__global__ void get_ideal_pte_combinations(int* input, int* output,int* max_index, int* sum_of_square){
   int index = threadIdx.x + blockIdx.x * blockDim.x;
   printf("Get idea PTE solution for thread id:%d having max_index:%d\n",index,*max_index);
   if (index >= *max_index){
@@ -136,13 +141,14 @@ __global__ void get_ideal_pte_combinations(int* input, int* output,int* max_inde
   int input_subset_number = input[index];
   int offset=0;
   for (int i=index+1; i < *max_index;i++){
-    if (is_ideal_PTE(input_subset_number, input[i])){
-	printf("Found ideal PTE match: %d -- %d which will be updated for output index:%d and %d\n",input_subset_number,input[i],index*OFFSET + offset,index*OFFSET + offset+1);
+    bool is_solution = is_ideal_PTE(input_subset_number, input[i], sum_of_square);
+    if (is_solution){
+        printf("Found ideal PTE match: %d -- %d which will be updated for output index:%d and %d\n",input_subset_number,input[i],index*OFFSET + offset,index*OFFSET + offset+1);
         output[index*OFFSET + offset] = input_subset_number;
         output[index*OFFSET + offset + 1] = input[i];
-	offset +=2;
+        offset +=2;
+      }
     }
-  }
   printf("Check completed for subset number %d\n",input_subset_number);
   //delete[] partner_subsets;
 }
@@ -165,7 +171,7 @@ __host__ void print_output(int* subsets, int num_subsets ){
     if (subsets[i]==0 && subsets[i+1]==0){
     	continue;
     }
-    printf("Start index: %d ",i );	    
+    printf("Start index: %d ",i );
     convert_number_to_subset(subsets[i], subset);
     for (int j = 0; j < NUM_ELEMENTS_SUBSET; j++) {
       printf("%d ", subset[j]);
@@ -195,7 +201,7 @@ int main(int argc, char *argv[]) {
   get_input_subsets(NUM_ELEMENTS_SUBSET, h_subsets);
   printf("Printing output from CPU with size: %d\n", num_subsets);
   print_subsets(h_subsets,num_subsets,NUM_ELEMENTS_SUBSET);
-  
+
   // Initiate device copies
   size_t limit = 256;
 
@@ -208,11 +214,12 @@ int main(int argc, char *argv[]) {
   cudaDeviceGetLimit(&limit, cudaLimitDevRuntimeSyncDepth);
   printf("cudaLimitDevRuntimeSyncDepth: %u\n", (unsigned)limit);
 
-  int *d_subsets, *d_output, *d_max_index;  // device copies
+  int *d_subsets, *d_output, *d_max_index, *d_sum_of_squares;  // device copies
   int size = num_subsets * sizeof(int);
-  
+
   // Allocate space for device copies
   cudaMalloc((void**) &d_subsets, size);
+  cudaMalloc((void**) &d_sum_of_squares, size);
   cudaMalloc((void**) &d_max_index, sizeof(int));
   cudaMalloc((void**) &d_output, size*OFFSET);
   cudaMemcpy(d_subsets, h_subsets,size, cudaMemcpyHostToDevice);
@@ -221,15 +228,15 @@ int main(int argc, char *argv[]) {
   // Run the functions on device
   int num_blocks = num_subsets/THREADS_PER_BLOCK +1;
   printf("Number of blocks =%d with threads per block=%d for total number of subsets=%d\n", num_blocks,THREADS_PER_BLOCK,num_subsets);
-  get_ideal_pte_combinations<<<num_blocks,THREADS_PER_BLOCK>>>(d_subsets,d_output,d_max_index);
+  get_ideal_pte_combinations<<<num_blocks,THREADS_PER_BLOCK>>>(d_subsets,d_output,d_max_index,d_sum_of_squares);
   cudaDeviceSynchronize();
-  
+
   // Copy from device to host
   int h_output[num_subsets*OFFSET] = {0};
   cudaMemcpy(h_output, d_output, size*OFFSET, cudaMemcpyDeviceToHost);
   printf("Printing ideal PTE output for %d element subset \n", NUM_ELEMENTS_SUBSET);
   print_output(h_output,num_subsets*OFFSET);
-  
+
   // Clean up
   cudaFree(d_subsets);
   cudaFree(d_output);
