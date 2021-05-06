@@ -1,6 +1,5 @@
 # Capstone Project
 
-
 ## Background
 In mathematics, the Prouhet–Tarry–Escott(PTE) problem asks for two disjoint multisets A and B of n integers each, whose first k power sum symmetric polynomials are all equal. In other words 
 
@@ -14,12 +13,18 @@ For this project, we restrict set A and set B as mentioned above to be integers 
 ## Goal
 In this project, I plan to implement a solution based on CUDA that identifies the ideal solutions of the Prouhet-Tarry-Escott problem in CUDA and compare the performance with the baseline implementation using MPI library.
 
-## Instructions to run
+## Instructions to run MPI
 ```shell
-foo@bar:~$ mkdir build
-foo@bar:~$ cd build
-foo@bar:~$ cmake ..
-foo@bar:~$ make
-foo@bar:~$ ./Capstone
+foo@bar:~$ cd mpi
+foo@bar:~$ mpicc -o get_subsets get_subsets.cpp       
+foo@bar:~$ sbatch mpi.sbatch
 ```
+
+## Instructions to run CUDA
+```shell
+foo@bar:~$ cd cuda
+foo@bar:~$ nvcc get_subsets.cu -o get_subsets           
+foo@bar:~$ srun get_subsets
+```
+
 
