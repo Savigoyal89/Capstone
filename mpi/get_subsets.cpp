@@ -19,6 +19,30 @@ using namespace std;
 // Driver code
 
 
+double get_sum_of_power(std::vector<int> set, int set_size, int power) {
+    double sum = 0;
+    for (int i = 0; i < set_size; i++) {
+        sum += pow(set[i], power);
+    }
+    return sum;
+}
+
+/**
+ *  Check if two sets of elements are ideal PTE solutions.
+ * @param set1 Input set 1
+ * @param set2 Input set 2
+ * @param set_size Set size
+ * @return true if the sets are ideal PTE, else false.
+ */
+bool is_ideal_PTE(std::vector<int> set1, std::vector<int> set2, int set_size) {
+    for (int i = 1; i < set_size; i++) {
+        if (get_sum_of_power(set1, set_size, i) !=
+            get_sum_of_power(set2, set_size, i)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 void get_combinations(int *arr, int n, int r,
                       std::vector<int> &current, int i,
